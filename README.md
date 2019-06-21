@@ -44,6 +44,8 @@
 
 # <div dir="rtl">واجهات المشروع</div>
 
+<div dir="rtl">
+
 <h3>الشاشة الرئيسية - عرض صورة:</h3>
 <img src="screenshots/Screenshot_1559536577.png" heigth="480" width="270"/>
 
