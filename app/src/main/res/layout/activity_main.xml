@@ -59,6 +59,7 @@
         app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior">
 
         <TextView
+            android:id="@+id/title"
             tools:text="Title"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -80,11 +81,12 @@
             android:padding="16dp">
 
             <TextView
-                tools:text="Info about the item presented above"
+                android:id="@+id/explanation"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:textAppearance="?android:textAppearanceMedium"
-                android:textColor="@android:color/white" />
+                android:textColor="@android:color/white"
+                tools:text="Info about the item presented above" />
 
         </androidx.core.widget.NestedScrollView>
 
