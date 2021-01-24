@@ -5,10 +5,20 @@ import com.ortiz.touchview.TouchImageView;
 public class Data {
     private String title;
     private String description;
+    private String image;
 
-    public Data(String title, String description) {
+    public Data(String title, String description, String imageOrVideo) {
         this.title = title;
         this.description = description;
+        this.image = imageOrVideo;
+    }
+
+    public String getImageOrVideo() {
+        return image;
+    }
+
+    public void setImageOrVideo(String image) {
+        this.image = image;
     }
 
     public String getTitle() {
