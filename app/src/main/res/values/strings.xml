@@ -19,9 +19,9 @@
     <!-- About Screen -->
     <string name="about_label">About</string>
     <string name="about_content">This application shows you appealing imagery from the universe with associated metadata and description every day.
-        This app uses official "Apod" API from <a href="https://api.nasa.gov/api.html#apod">NASA</a> but it\'s not the official NASA app.
-    </string>
+        This app uses official Apod API from <a href="https://api.nasa.gov/api.html#apod">NASA</a> but it\'s not the official NASA app.
 
+</string>
     <!-- Share -->
     <string name="share">Share</string>
 

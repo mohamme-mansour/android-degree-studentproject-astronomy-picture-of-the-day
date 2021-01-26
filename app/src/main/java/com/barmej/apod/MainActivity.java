@@ -1,11 +1,18 @@
 package com.barmej.apod;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.fragment.app.FragmentManager;
 
 import android.app.DatePickerDialog;
+import android.app.DownloadManager;
 import android.content.Context;
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.drawable.Drawable;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -26,19 +33,25 @@ import com.android.volley.toolbox.Volley;
 import com.bumptech.glide.Glide;
 import com.ortiz.touchview.TouchImageView;
 import com.squareup.picasso.Picasso;
+import com.squareup.picasso.Target;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.Calendar;
 
 public class MainActivity extends AppCompatActivity {
     private static final String URL = "https://api.nasa.gov/planetary/apod?api_key=YRLtBTu1hzCe6pCGMjHfSbQ2t1rapMM1xOF2Eobm&date=";
+    private Bitmap myBitmap;
     public String date = "";
     RequestQueue requestQueue;
     TextView description, title;
     String test = "";
-    String mediaType = "";
+    String mediaType;
     TouchImageView image;
     DatePickerDialog datePickerDialog;
     WebView webView;
@@ -47,6 +60,9 @@ public class MainActivity extends AppCompatActivity {
     private int mDay;
     Context context = MainActivity.this;
     ProgressBar progressBar;
+    private String hdUrl;
+    Data data;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -83,15 +99,14 @@ public class MainActivity extends AppCompatActivity {
                 datePicker();
                 break;
             case R.id.action_download_hd:
-                Toast.makeText(context, "Hi", Toast.LENGTH_SHORT).show();
+                download();
                 break;
             case R.id.action_about:
-                FragmentAbout aboutFragment = new FragmentAbout();
-                FragmentManager FragmentManager = getSupportFragmentManager();
-                aboutFragment.show(FragmentManager, aboutFragment.getTag());
-                return true;
+                Intent intent = new Intent(MainActivity.this, aboutActivity.class);
+                startActivity(intent);
+                break;
             case R.id.action_share:
-                Toast.makeText(context, "Hi", Toast.LENGTH_SHORT).show();
+                share();
                 break;
         }
         return super.onOptionsItemSelected(item);
@@ -106,29 +121,14 @@ public class MainActivity extends AppCompatActivity {
                     public void onResponse(JSONObject response) {
 
                         try {
-                            mediaType = response.getString("media_type");
-                            Data data = new Data(response.getString("title"),response.getString("explanation") , response.getString("url"));
-                            if (mediaType.equals("image")){
+                            data = new Data(
+                                    response.getString("title"),
+                                    response.getString("explanation"),
+                                    response.getString("url"),
+                                    response.getString("hdurl"),
+                                    response.getString("media_type"));
 
-                                description.setText(data.getDescription());
-                                title.setText(data.getTitle());
-                                webView.setVisibility(View.GONE);
-                                image.setVisibility(View.VISIBLE);
-                                webView.loadData("", "text/html", null);
-                                // i am using glide and picasso to double the speed
-                                Glide.with(MainActivity.this).load(data.getImageOrVideo()).thumbnail(0.05f).into(image);
-                                Picasso.with(MainActivity.this).load(data.getImageOrVideo()).into(image);
-                                progressBar.setVisibility(View.GONE);
-                            } else if (mediaType.equals("video")){
-                                description.setText(data.getDescription());
-                                title.setText(data.getTitle());
-                                progressBar.setVisibility(View.GONE);
-                                image.setVisibility(View.GONE);
-                                webView.loadUrl(data.getImageOrVideo());
-                                webView.setVisibility(View.VISIBLE);
-                            }else{
-                                Toast.makeText(context, "no", Toast.LENGTH_SHORT).show();
-                            }
+                            ifImageOrVideo();
 
                         } catch (JSONException e) {
                             e.printStackTrace();
@@ -147,36 +147,25 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    public void changeDate(String chosenDate){
+    public void changeDate(String chosenDate) {
         progressBar.setVisibility(View.VISIBLE);
         date = chosenDate;
-        String finalURL = URL+date;
+        String finalURL = URL + date;
         JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(Request.Method.GET, finalURL, null,
                 new Response.Listener<JSONObject>() {
                     @Override
                     public void onResponse(JSONObject response) {
                         try {
-                            mediaType = response.getString("media_type");
-                            Data data = new Data(response.getString("title"),response.getString("explanation") , response.getString("url"));
-                            if (mediaType.equals("image")){
-                                String imageURL = response.getString("url");
-                                description.setText(data.getDescription());
-                                title.setText(data.getTitle());
-                                webView.setVisibility(View.GONE);
-                                image.setVisibility(View.VISIBLE);
-                                webView.loadData("", "text/html", null);
-                                // i am using glide and picasso to double the speed
-                                Glide.with(MainActivity.this).load(data.getImageOrVideo()).thumbnail(0.005f).into(image);
-                                Picasso.with(MainActivity.this).load(imageURL).into(image);
-                                progressBar.setVisibility(View.GONE);
-                            } else if (mediaType.equals("video")){
-                                description.setText(data.getDescription());
-                                title.setText(data.getTitle());
-                                progressBar.setVisibility(View.GONE);
-                                image.setVisibility(View.GONE);
-                                webView.loadUrl(data.getImageOrVideo());
-                                webView.setVisibility(View.VISIBLE);
-                            }
+                            Toast.makeText(context, "none from the below Error", Toast.LENGTH_SHORT).show();
+                                 mediaType = response.getString("media_type");
+                                 data = new Data(
+                                    response.getString("title"),
+                                    response.getString("explanation"),
+                                    response.getString("url"),
+                                    response.getString("hdurl"),
+                                    response.getString("media_type"));
+
+                                    ifImageOrVideoTest();
 
                         } catch (JSONException e) {
                             e.printStackTrace();
@@ -194,7 +183,7 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    public void datePicker(){
+    public void datePicker() {
         datePickerDialog = new DatePickerDialog(MainActivity.this, new DatePickerDialog.OnDateSetListener() {
 
             @Override
@@ -216,4 +205,119 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    public void download() {
+        // Create request for android download manager
+        DownloadManager downloadManager = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
+        DownloadManager.Request request = new DownloadManager.Request(Uri.parse(hdUrl));
+        request.setAllowedNetworkTypes(DownloadManager.Request.NETWORK_WIFI | DownloadManager.Request.NETWORK_MOBILE);
+
+        // set title and description
+        request.setTitle("Astoronomy Picture of the day");
+        request.setDescription("Downloading image...");
+
+        request.allowScanningByMediaScanner();
+        request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+
+        //set the local destination for download file to a path within the application's external files directory
+        request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "downloadfileName");
+        request.setMimeType("image/*");
+        downloadManager.enqueue(request);
+    }
+    private void share(){
+        Bitmap bitmap = getBitmapFromView(image);
+        try {
+            File file = new File(this.getExternalCacheDir() , "a.png");
+            FileOutputStream fOut = new FileOutputStream(file);
+            bitmap.compress(Bitmap.CompressFormat.PNG , 100 , fOut);
+            fOut.flush();
+            fOut.close();
+            file.setReadable(true , false);
+            final Intent intent = new Intent(Intent.ACTION_SEND);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            intent.putExtra(Intent.EXTRA_STREAM , Uri.fromFile(file));
+            intent.setType("image/png");
+            startActivity(Intent.createChooser(intent , "Share image via"));
+
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+    private Bitmap getBitmapFromView(View view){
+        Bitmap returnedBitmap = Bitmap.createBitmap(view.getWidth() , view.getHeight() , Bitmap.Config.ARGB_8888 );
+        Canvas canvas = new Canvas(returnedBitmap);
+        Drawable bgDrawable = view.getBackground();
+        if (bgDrawable!=null){
+            bgDrawable.draw(canvas);
+        }else{
+            canvas.drawColor(Color.WHITE);
+        }
+        view.draw(canvas);
+        return returnedBitmap;
+    }
+    public void ifImageOrVideo(){
+        if (data.getMediaType().equals("image")) {
+
+            description.setText(data.getDescription());
+            title.setText(data.getTitle());
+            webView.setVisibility(View.GONE);
+            image.setVisibility(View.VISIBLE);
+            hdUrl = data.getHdUrl();
+            webView.loadData("", "text/html", null);
+            // i am using glide and picasso to double the speed
+            Glide.with(MainActivity.this).load(data.getImageOrVideo()).thumbnail(0.005f).into(image);
+            Picasso.with(MainActivity.this).load(data.getImageOrVideo()).into(image);
+            progressBar.setVisibility(View.GONE);
+
+
+        } else if (data.getMediaType().equals("video")) {
+            Toast.makeText(context, "Welcome", Toast.LENGTH_SHORT).show();
+            description.setText(data.getDescription());
+            title.setText(data.getTitle());
+            progressBar.setVisibility(View.GONE);
+            image.setVisibility(View.GONE);
+            webView.loadUrl(data.getImageOrVideo());
+            webView.setVisibility(View.VISIBLE);
+        }else {
+            webView.loadData("", "text/html", null);
+            webView.setVisibility(View.GONE);
+            image.setVisibility(View.GONE);
+            progressBar.setVisibility(View.VISIBLE);
+        }
+    }
+
+    public void ifImageOrVideoTest(){
+        if (mediaType.equals("image")) {
+            Toast.makeText(context, "image Error", Toast.LENGTH_SHORT).show();
+            description.setText(data.getDescription());
+            title.setText(data.getTitle());
+            webView.setVisibility(View.GONE);
+            image.setVisibility(View.VISIBLE);
+            hdUrl = data.getHdUrl();
+            webView.loadData("", "text/html", null);
+            // i am using glide and picasso to double the speed
+            Glide.with(MainActivity.this).load(data.getImageOrVideo()).thumbnail(0.005f).into(image);
+            Picasso.with(MainActivity.this).load(data.getImageOrVideo()).into(image);
+            progressBar.setVisibility(View.GONE);
+
+
+        } else if (mediaType.equals("video")) {
+            Toast.makeText(context, "video Error", Toast.LENGTH_SHORT).show();
+            description.setText(data.getDescription());
+            title.setText(data.getTitle());
+            progressBar.setVisibility(View.GONE);
+            image.setVisibility(View.GONE);
+            webView.loadUrl(data.getImageOrVideo());
+            webView.setVisibility(View.VISIBLE);
+        }else {
+            Toast.makeText(context, "else Error", Toast.LENGTH_SHORT).show();
+            webView.loadData("", "text/html", null);
+            webView.setVisibility(View.GONE);
+            image.setVisibility(View.GONE);
+            progressBar.setVisibility(View.VISIBLE);
+        }
+    }
 }
